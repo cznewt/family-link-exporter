@@ -33,13 +33,39 @@ def req(method, url, body=None):
         return e.code, e.read()
 
 
+_folders_done = set()
+
+
+def ensure_folder(uid, title=None, parent_uid=None):
+    """Create/update a Grafana folder (idempotent); nest under parent_uid if given."""
+    if not uid or uid in _folders_done:
+        return
+    t = title or uid.replace("-", " ").title()
+    body = {"uid": uid, "title": t}
+    if parent_uid:
+        body["parentUid"] = parent_uid
+    status, _ = req("POST", f"{URL}/api/folders", body)
+    if status >= 400:  # already exists -> update title
+        req("PUT", f"{URL}/api/folders/{uid}", {"title": t, "overwrite": True})
+    if parent_uid:  # ensure nesting (idempotent)
+        req("POST", f"{URL}/api/folders/{uid}/move", {"parentUid": parent_uid})
+    _folders_done.add(uid)
+
+
 def push(path):
     doc = json.load(open(path))
     doc.setdefault("metadata", {})["namespace"] = NS
     name = doc["metadata"]["name"]
-    folder = doc["metadata"].get("annotations", {}).get("grafana.app/folder")
+    anns = doc["metadata"].get("annotations", {})
+    folder = anns.get("grafana.app/folder")
+    # observ-viz.dev/* are placement hints, not real Grafana annotations -> strip.
+    title = anns.pop("observ-viz.dev/folder-title", None)
+    parent_uid = anns.pop("observ-viz.dev/folder-parent-uid", None)
+    parent_title = anns.pop("observ-viz.dev/folder-parent-title", None)
+    if parent_uid:
+        ensure_folder(parent_uid, parent_title)
     if folder:
-        req("POST", f"{URL}/api/folders", {"uid": folder, "title": folder.replace("-", " ").title()})
+        ensure_folder(folder, title, parent_uid)
     status, body = req("POST", API, doc)
     if status == 409:  # exists -> replace
         req("DELETE", f"{API}/{name}", None)

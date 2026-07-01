@@ -2,6 +2,12 @@
   "apiVersion": "dashboard.grafana.app/v2beta1",
   "kind": "Dashboard",
   "metadata": {
+    "annotations": {
+      "grafana.app/folder": "android-device",
+      "observ-viz.dev/folder-parent-title": "Parental Control",
+      "observ-viz.dev/folder-parent-uid": "afqtbmnsbpb7ka",
+      "observ-viz.dev/folder-title": "Android Device"
+    },
     "name": "family-link-exporter"
   },
   "spec": {

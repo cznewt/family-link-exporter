@@ -8,6 +8,16 @@
   dashboardTags: ['family-link-exporter'],
   datasource: '${datasource}',
 
+  // Grafana folder placement: Parental Control -> Android Device.
+  // parentUid is the uid of the existing "Parental Control" folder in the target
+  // Grafana (instance-specific); override it for a different Grafana.
+  folder: {
+    uid: 'android-device',
+    title: 'Android Device',
+    parentUid: 'afqtbmnsbpb7ka',
+    parentTitle: 'Parental Control',
+  },
+
   // apps_total carries job+family+child and exists for every child, so it drives
   // the $job / $family / $child dropdowns.
   varMetric: 'family_link_apps_total',

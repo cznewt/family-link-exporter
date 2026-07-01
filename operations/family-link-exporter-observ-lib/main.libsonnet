@@ -4,6 +4,7 @@
 //   p.grafana.dashboard      // a Grafana dashboard (.toSpec() for JSON)
 //   p.asMonitoringMixin()    // { grafanaDashboards+, prometheusAlerts+ }
 local pack = import 'libs/common-lib/pack.libsonnet';
+local dashboard = import 'custom/dashboard.libsonnet';
 
 {
   new(config={}):
@@ -102,6 +103,20 @@ local pack = import 'libs/common-lib/pack.libsonnet';
       },
     ];
 
-    pack.build(cfg, allSignals, groups, alerts)
-    + { prometheus+: { rules: rules } },
+    local built = pack.build(cfg, allSignals, groups, alerts);
+    // Place the dashboard in the Parental Control -> Android Device folder.
+    local dash = built.grafana.dashboard
+                 + dashboard.withFolder(cfg.folder.uid, cfg.folder.title)
+                 + { metadata+: { annotations+: {
+                   'observ-viz.dev/folder-parent-uid': cfg.folder.parentUid,
+                   'observ-viz.dev/folder-parent-title': cfg.folder.parentTitle,
+                 } } };
+
+    built + {
+      prometheus+: { rules: rules },
+      grafana+: {
+        dashboard: dash,
+        dashboards: { [cfg.uid + '.json']: dash },
+      },
+    },
 }
