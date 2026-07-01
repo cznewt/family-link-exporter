@@ -28,7 +28,7 @@
                       "group": "prometheus",
                       "kind": "DataQuery",
                       "spec": {
-                        "expr": "family_link_app_daily_limit_minutes{job=~\"$job\"} * 60"
+                        "expr": "family_link_app_daily_limit_minutes{job=~\"$job\", family=~\"$family\"} * 60"
                       },
                       "version": "v0"
                     },
@@ -79,7 +79,7 @@
                       "group": "prometheus",
                       "kind": "DataQuery",
                       "spec": {
-                        "expr": "family_link_app_usage_seconds{job=~\"$job\"}"
+                        "expr": "family_link_app_usage_seconds{job=~\"$job\", family=~\"$family\"}"
                       },
                       "version": "v0"
                     },
@@ -130,7 +130,7 @@
                       "group": "prometheus",
                       "kind": "DataQuery",
                       "spec": {
-                        "expr": "family_link_apps_total{job=~\"$job\"}"
+                        "expr": "family_link_apps_total{job=~\"$job\", family=~\"$family\"}"
                       },
                       "version": "v0"
                     },
@@ -181,7 +181,7 @@
                       "group": "prometheus",
                       "kind": "DataQuery",
                       "spec": {
-                        "expr": "family_link_scrape_duration_seconds{job=~\"$job\"}"
+                        "expr": "family_link_scrape_duration_seconds{job=~\"$job\", family=~\"$family\"}"
                       },
                       "version": "v0"
                     },
@@ -232,7 +232,7 @@
                       "group": "prometheus",
                       "kind": "DataQuery",
                       "spec": {
-                        "expr": "family_link_screen_time_seconds{job=~\"$job\"}"
+                        "expr": "family_link_screen_time_seconds{job=~\"$job\", family=~\"$family\"}"
                       },
                       "version": "v0"
                     },
@@ -283,7 +283,7 @@
                       "group": "prometheus",
                       "kind": "DataQuery",
                       "spec": {
-                        "expr": "family_link_up{job=~\"$job\"}"
+                        "expr": "family_link_up{job=~\"$job\", family=~\"$family\"}"
                       },
                       "version": "v0"
                     },
@@ -471,6 +471,32 @@
             "spec": {
               "qryType": 1,
               "query": "label_values(family_link_up, job)",
+              "refId": "A"
+            },
+            "version": "v0"
+          }
+        }
+      },
+      {
+        "kind": "QueryVariable",
+        "spec": {
+          "current": {
+            "text": "All",
+            "value": "$__all"
+          },
+          "includeAll": true,
+          "label": "Family",
+          "multi": true,
+          "name": "family",
+          "query": {
+            "datasource": {
+              "name": "${datasource}"
+            },
+            "group": "prometheus",
+            "kind": "DataQuery",
+            "spec": {
+              "qryType": 1,
+              "query": "label_values(family_link_up{job=~\"$job\"}, family)",
               "refId": "A"
             },
             "version": "v0"

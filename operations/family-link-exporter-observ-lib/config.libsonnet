@@ -8,9 +8,11 @@
   dashboardTags: ['family-link-exporter'],
   datasource: '${datasource}',
 
-  // Dashboard query selector, driven by the $job variable.
-  selector: 'job=~"$job"',
+  // Dashboard query selector, driven by the $job and $family variables.
+  selector: 'job=~"$job", family=~"$family"',
   varMetric: 'family_link_up',
+  // Cascading filter variable: a $family dropdown (label_values on family).
+  varLabels: ['family'],
 
   // Static selector for ALERT expressions (alerts cannot use the $job var).
   exporterSelector: 'job="family-link-exporter"',
