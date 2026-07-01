@@ -173,19 +173,27 @@ def _resolve_targets(
     return client.supervised_account_ids(), names
 
 
-def collect_snapshot(config: Config, client: FamilyLinkClient) -> Snapshot:
-    """Fetch everything once and return a normalized snapshot."""
+def collect_snapshot(config: Config) -> Snapshot:
+    """Fetch everything once and return a normalized snapshot.
+
+    Builds its own client from ``config`` so a rotated session file is picked up
+    each call, and any credential/API problem (including no credentials at all)
+    is caught and surfaced as an unhealthy scrape (``success=False``) rather than
+    crashing the process.
+    """
     started = time.monotonic()
     now = datetime.now(config.timezone)
     today = (now.year, now.month, now.day)
 
     try:
-        account_ids, names = _resolve_targets(config, client)
-        children: list[ChildSnapshot] = []
-        for account_id in account_ids:
-            data = client.get_apps_and_usage(account_id)
-            name = names.get(account_id, account_id)
-            children.append(build_child_snapshot(account_id, name, data, today))
+        config.validate()
+        with FamilyLinkClient(config) as client:
+            account_ids, names = _resolve_targets(config, client)
+            children: list[ChildSnapshot] = []
+            for account_id in account_ids:
+                data = client.get_apps_and_usage(account_id)
+                name = names.get(account_id, account_id)
+                children.append(build_child_snapshot(account_id, name, data, today))
 
         snapshot = Snapshot(children=children, success=True)
         logger.info(
@@ -194,7 +202,7 @@ def collect_snapshot(config: Config, client: FamilyLinkClient) -> Snapshot:
             sum(len(c.apps) for c in children),
         )
     except Exception as exc:  # noqa: BLE001 - surface as an unhealthy scrape
-        logger.error("Collection failed: %s", exc, exc_info=True)
+        logger.error("Collection failed: %s", exc, exc_info=logger.isEnabledFor(logging.DEBUG))
         snapshot = Snapshot(success=False, error=str(exc))
 
     snapshot.duration_seconds = time.monotonic() - started

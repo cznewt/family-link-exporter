@@ -6,6 +6,8 @@ IMAGE := "cznewt/family-link-exporter"
 TAG := `cat VERSION`
 CHART := "operations/family-link-exporter-helm-chart"
 CHARTS_NAMESPACE := "cznewt/charts"
+OBSERV_LIB := "operations/family-link-exporter-observ-lib"
+OBSERV_LIB_IMAGE := "ghcr.io/cznewt/observ-lib:latest"
 
 default:
   just --list
@@ -75,3 +77,14 @@ chart-publish:
     rm -rf /tmp/family-link-exporter-charts && mkdir -p /tmp/family-link-exporter-charts
     helm package {{CHART}} -d /tmp/family-link-exporter-charts
     helm push /tmp/family-link-exporter-charts/*.tgz "oci://{{REGISTRY}}/{{CHARTS_NAMESPACE}}"
+
+# --- Observability library (observ-viz pack) ---
+# Rendered through the observ-lib image (observ-viz on the jpath; no local jsonnet/jb).
+
+# Render the observ-lib into dashboards/ alerts/ rules/ (committed outputs)
+observ-lib-build:
+    docker run --rm --user "$(id -u):$(id -g)" -v "$PWD/{{OBSERV_LIB}}":/work -w /work --entrypoint python3 {{OBSERV_LIB_IMAGE}} render.py
+
+# promtool-test the rendered alert rules (needs promtool on PATH)
+observ-lib-test:
+    promtool test rules {{OBSERV_LIB}}/tests/*.yaml

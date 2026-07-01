@@ -69,9 +69,13 @@ class Config:
             log_level=env.get("FLE_LOG_LEVEL", "INFO").upper(),
         )
 
+    def has_credential_source(self) -> bool:
+        return any(
+            [self.storage_state_path, self.cookie_file_path, self.cookie_browser]
+        )
+
     def validate(self) -> None:
-        sources = [self.storage_state_path, self.cookie_file_path, self.cookie_browser]
-        if not any(sources):
+        if not self.has_credential_source():
             raise ValueError(
                 "No credential source configured. Set one of FLE_STORAGE_STATE, "
                 "FLE_COOKIE_FILE or FLE_COOKIE_BROWSER."

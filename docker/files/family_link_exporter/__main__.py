@@ -12,8 +12,6 @@ import threading
 from prometheus_client import REGISTRY, start_http_server
 
 from . import __version__
-from .auth import AuthError
-from .client import FamilyLinkClient
 from .collector import collect_snapshot
 from .config import Config
 from .metrics import FamilyLinkCollector
@@ -30,26 +28,33 @@ def _setup_logging(level: str) -> None:
 
 def _refresh_loop(
     config: Config,
-    client: FamilyLinkClient,
     collector: FamilyLinkCollector,
     stop: threading.Event,
 ) -> None:
-    """Poll the API every ``refresh_interval`` seconds until stopped."""
+    """Poll the API every ``refresh_interval`` seconds until stopped.
+
+    Each iteration builds a fresh client from ``config``, so a rotated session
+    file (``FLE_STORAGE_STATE``) is picked up without a restart, and any
+    credential or API failure just yields ``family_link_up=0``.
+    """
     while not stop.is_set():
-        snapshot = collect_snapshot(config, client)
-        collector.update(snapshot)
+        collector.update(collect_snapshot(config))
         stop.wait(config.refresh_interval)
 
 
 def cmd_serve(config: Config) -> int:
-    config.validate()
-    client = FamilyLinkClient(config)
+    if not config.has_credential_source():
+        logger.warning(
+            "No credential source configured (FLE_STORAGE_STATE / FLE_COOKIE_FILE "
+            "/ FLE_COOKIE_BROWSER); serving family_link_up=0 until one is set."
+        )
+
     collector = FamilyLinkCollector()
     REGISTRY.register(collector)
 
     stop = threading.Event()
     worker = threading.Thread(
-        target=_refresh_loop, args=(config, client, collector, stop), daemon=True
+        target=_refresh_loop, args=(config, collector, stop), daemon=True
     )
     worker.start()
 
@@ -70,15 +75,12 @@ def cmd_serve(config: Config) -> int:
 
     stop.wait()
     worker.join(timeout=5)
-    client.close()
     return 0
 
 
 def cmd_dump(config: Config) -> int:
     """Fetch a single snapshot and print it as JSON (for debugging auth/data)."""
-    config.validate()
-    with FamilyLinkClient(config) as client:
-        snapshot = collect_snapshot(config, client)
+    snapshot = collect_snapshot(config)
     json.dump(snapshot.to_dict(), sys.stdout, indent=2, ensure_ascii=False)
     sys.stdout.write("\n")
     return 0 if snapshot.success else 1
@@ -117,14 +119,15 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         config = Config.from_env()
-        _setup_logging(config.log_level)
-        if command == "dump":
-            return cmd_dump(config)
-        return cmd_serve(config)
-    except (ValueError, AuthError) as exc:
-        # Configuration / credential problems: report cleanly, no traceback.
+    except ValueError as exc:
+        # Bad config (e.g. unknown FLE_TIMEZONE): report cleanly, no traceback.
         print(f"error: {exc}", file=sys.stderr)
         return 2
+
+    _setup_logging(config.log_level)
+    if command == "dump":
+        return cmd_dump(config)
+    return cmd_serve(config)
 
 
 if __name__ == "__main__":

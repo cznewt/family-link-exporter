@@ -6,7 +6,8 @@ data pipeline can be verified without a Google account.
 
 from __future__ import annotations
 
-from family_link_exporter.collector import Snapshot, build_child_snapshot
+from family_link_exporter.collector import Snapshot, build_child_snapshot, collect_snapshot
+from family_link_exporter.config import Config
 from family_link_exporter.metrics import FamilyLinkCollector
 from family_link_exporter.models import AppUsage
 
@@ -98,3 +99,10 @@ def test_collector_renders_metrics():
     assert usage["com.spotify.music"] == 2400.5
     screen = {s.labels["child"]: s.value for s in samples["family_link_screen_time_seconds"]}
     assert screen["Alex"] == 2700.5
+
+
+def test_collect_snapshot_without_credentials_is_unhealthy():
+    # No credential source -> the scrape reports unhealthy instead of crashing.
+    snapshot = collect_snapshot(Config())
+    assert snapshot.success is False
+    assert "credential" in (snapshot.error or "").lower()
