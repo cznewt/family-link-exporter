@@ -44,18 +44,22 @@ SAMPLE = {
                 "friendlyName": "Kid's phone",
                 "lastActivityTimeMillis": "1719830000000",
             },
-        }
+        },
+        {
+            "deviceId": "device-2",
+            "displayInfo": {"model": "Galaxy Tab", "friendlyName": "Kid's tablet"},
+        },
     ],
     "appUsageSessions": [
         {"usage": "1800s", "appId": {"androidAppPackageName": "com.spotify.music"},
-         "deviceMudId": "m1", "date": {"year": 2026, "month": 7, "day": 1}},
+         "deviceMudId": "device-1", "date": {"year": 2026, "month": 7, "day": 1}},
         {"usage": "600.5s", "appId": {"androidAppPackageName": "com.spotify.music"},
-         "deviceMudId": "m2", "date": {"year": 2026, "month": 7, "day": 1}},
+         "deviceMudId": "device-2", "date": {"year": 2026, "month": 7, "day": 1}},
         {"usage": "300s", "appId": {"androidAppPackageName": "com.duolingo"},
-         "date": {"year": 2026, "month": 7, "day": 1}},
+         "deviceMudId": "device-1", "date": {"year": 2026, "month": 7, "day": 1}},
         # Yesterday — must be excluded from "today".
         {"usage": "9999s", "appId": {"androidAppPackageName": "com.spotify.music"},
-         "date": {"year": 2026, "month": 6, "day": 30}},
+         "deviceMudId": "device-1", "date": {"year": 2026, "month": 6, "day": 30}},
     ],
 }
 
@@ -87,6 +91,15 @@ def test_total_and_device():
     child = _child()
     assert child.total_usage_seconds == 1800 + 600.5 + 300
     assert child.devices[0].last_activity_seconds == 1719830000.0
+
+
+def test_per_device_usage():
+    child = _child()
+    # deviceMudId is mapped to the friendly name from deviceInfo.
+    by = {(u.device, u.package): u.usage_seconds for u in child.device_usages}
+    assert by[("Kid's phone", "com.spotify.music")] == 1800
+    assert by[("Kid's tablet", "com.spotify.music")] == 600.5
+    assert by[("Kid's phone", "com.duolingo")] == 300
 
 
 def test_collector_renders_metrics():

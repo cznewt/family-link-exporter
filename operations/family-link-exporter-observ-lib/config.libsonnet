@@ -8,22 +8,26 @@
   dashboardTags: ['family-link-exporter'],
   datasource: '${datasource}',
 
-  // Dashboard query selector, driven by the $job and $family variables.
-  selector: 'job=~"$job", family=~"$family"',
-  varMetric: 'family_link_up',
-  // Cascading filter variable: a $family dropdown (label_values on family).
-  varLabels: ['family'],
+  // apps_total carries job+family+child and exists for every child, so it drives
+  // the $job / $family / $child dropdowns.
+  varMetric: 'family_link_apps_total',
+  varLabels: ['family', 'child'],
 
-  // Static selector for ALERT expressions (alerts cannot use the $job var).
+  // Per-signal selectors: health metrics carry only `family`; per-child data
+  // also carries `child`. Signals pick the matching one (see the signals file).
+  familySelector: 'job=~"$job", family=~"$family"',
+  childSelector: 'job=~"$job", family=~"$family", child=~"$child"',
+  selector: 'job=~"$job", family=~"$family", child=~"$child"',
+
+  // Static selector for ALERT expressions (alerts cannot use dashboard vars).
   exporterSelector: 'job="family-link-exporter"',
 
   // Alert tuning.
-  downFor: '5m',      // Prometheus target unreachable
-  unhealthyFor: '15m',  // family_link_up == 0 (auth/session problem)
-  staleSeconds: 3600,   // last successful scrape older than this
+  downFor: '5m',
+  unhealthyFor: '15m',
+  staleSeconds: 3600,
   staleFor: '15m',
 
-  // Signals for the exporter's metrics.
   signals: {
     family_link: (import './signals/family_link.libsonnet')(this),
   },

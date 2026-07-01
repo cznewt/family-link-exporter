@@ -10,108 +10,6 @@
     "description": "",
     "editable": true,
     "elements": {
-      "app_limit": {
-        "kind": "Panel",
-        "spec": {
-          "data": {
-            "kind": "QueryGroup",
-            "spec": {
-              "queries": [
-                {
-                  "kind": "PanelQuery",
-                  "spec": {
-                    "hidden": false,
-                    "query": {
-                      "datasource": {
-                        "name": "${datasource}"
-                      },
-                      "group": "prometheus",
-                      "kind": "DataQuery",
-                      "spec": {
-                        "expr": "family_link_app_daily_limit_minutes{job=~\"$job\", family=~\"$family\"} * 60"
-                      },
-                      "version": "v0"
-                    },
-                    "refId": "A"
-                  }
-                }
-              ],
-              "queryOptions": {},
-              "transformations": []
-            }
-          },
-          "description": "",
-          "id": 1,
-          "links": [],
-          "title": "Configured daily limits",
-          "transparent": false,
-          "vizConfig": {
-            "group": "timeseries",
-            "kind": "VizConfig",
-            "spec": {
-              "fieldConfig": {
-                "defaults": {
-                  "unit": "s"
-                },
-                "overrides": []
-              },
-              "options": {}
-            },
-            "version": ""
-          }
-        }
-      },
-      "app_usage": {
-        "kind": "Panel",
-        "spec": {
-          "data": {
-            "kind": "QueryGroup",
-            "spec": {
-              "queries": [
-                {
-                  "kind": "PanelQuery",
-                  "spec": {
-                    "hidden": false,
-                    "query": {
-                      "datasource": {
-                        "name": "${datasource}"
-                      },
-                      "group": "prometheus",
-                      "kind": "DataQuery",
-                      "spec": {
-                        "expr": "family_link_app_usage_seconds{job=~\"$job\", family=~\"$family\"}"
-                      },
-                      "version": "v0"
-                    },
-                    "refId": "A"
-                  }
-                }
-              ],
-              "queryOptions": {},
-              "transformations": []
-            }
-          },
-          "description": "",
-          "id": 2,
-          "links": [],
-          "title": "App usage today (per app)",
-          "transparent": false,
-          "vizConfig": {
-            "group": "timeseries",
-            "kind": "VizConfig",
-            "spec": {
-              "fieldConfig": {
-                "defaults": {
-                  "unit": "s"
-                },
-                "overrides": []
-              },
-              "options": {}
-            },
-            "version": ""
-          }
-        }
-      },
       "apps": {
         "kind": "Panel",
         "spec": {
@@ -130,7 +28,7 @@
                       "group": "prometheus",
                       "kind": "DataQuery",
                       "spec": {
-                        "expr": "family_link_apps_total{job=~\"$job\", family=~\"$family\"}"
+                        "expr": "family_link_apps_total{job=~\"$job\", family=~\"$family\", child=~\"$child\"}"
                       },
                       "version": "v0"
                     },
@@ -143,7 +41,7 @@
             }
           },
           "description": "",
-          "id": 3,
+          "id": 1,
           "links": [],
           "title": "Apps tracked",
           "transparent": false,
@@ -154,6 +52,60 @@
               "fieldConfig": {
                 "defaults": {
                   "unit": "short"
+                },
+                "overrides": []
+              },
+              "options": {}
+            },
+            "version": ""
+          }
+        }
+      },
+      "limit_by_app": {
+        "kind": "Panel",
+        "spec": {
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "hidden": false,
+                    "query": {
+                      "datasource": {
+                        "name": "${datasource}"
+                      },
+                      "group": "prometheus",
+                      "kind": "DataQuery",
+                      "spec": {
+                        "expr": "family_link_app_daily_limit_minutes{job=~\"$job\", family=~\"$family\", child=~\"$child\"} * 60",
+                        "format": "table",
+                        "instant": true,
+                        "range": false
+                      },
+                      "version": "v0"
+                    },
+                    "refId": "A"
+                  }
+                }
+              ],
+              "queryOptions": {},
+              "transformations": []
+            }
+          },
+          "description": "",
+          "id": 2,
+          "links": [],
+          "title": "Daily limits by app",
+          "transparent": false,
+          "vizConfig": {
+            "group": "table",
+            "kind": "VizConfig",
+            "spec": {
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "s"
                 },
                 "overrides": []
               },
@@ -194,9 +146,9 @@
             }
           },
           "description": "",
-          "id": 4,
+          "id": 3,
           "links": [],
-          "title": "Scrape duration",
+          "title": "Scrape duration (per family)",
           "transparent": false,
           "vizConfig": {
             "group": "timeseries",
@@ -232,7 +184,7 @@
                       "group": "prometheus",
                       "kind": "DataQuery",
                       "spec": {
-                        "expr": "family_link_screen_time_seconds{job=~\"$job\", family=~\"$family\"}"
+                        "expr": "family_link_screen_time_seconds{job=~\"$job\", family=~\"$family\", child=~\"$child\"}"
                       },
                       "version": "v0"
                     },
@@ -245,7 +197,7 @@
             }
           },
           "description": "",
-          "id": 5,
+          "id": 4,
           "links": [],
           "title": "Screen time today (per child)",
           "transparent": false,
@@ -296,7 +248,7 @@
             }
           },
           "description": "",
-          "id": 6,
+          "id": 5,
           "links": [],
           "title": "Exporter up",
           "transparent": false,
@@ -307,6 +259,165 @@
               "fieldConfig": {
                 "defaults": {
                   "unit": "short"
+                },
+                "overrides": []
+              },
+              "options": {}
+            },
+            "version": ""
+          }
+        }
+      },
+      "usage_by_app": {
+        "kind": "Panel",
+        "spec": {
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "hidden": false,
+                    "query": {
+                      "datasource": {
+                        "name": "${datasource}"
+                      },
+                      "group": "prometheus",
+                      "kind": "DataQuery",
+                      "spec": {
+                        "expr": "sum by (family, child, app) (family_link_app_usage_seconds{job=~\"$job\", family=~\"$family\", child=~\"$child\"})",
+                        "format": "table",
+                        "instant": true,
+                        "range": false
+                      },
+                      "version": "v0"
+                    },
+                    "refId": "A"
+                  }
+                }
+              ],
+              "queryOptions": {},
+              "transformations": []
+            }
+          },
+          "description": "",
+          "id": 6,
+          "links": [],
+          "title": "Screen time today by app",
+          "transparent": false,
+          "vizConfig": {
+            "group": "table",
+            "kind": "VizConfig",
+            "spec": {
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "s"
+                },
+                "overrides": []
+              },
+              "options": {}
+            },
+            "version": ""
+          }
+        }
+      },
+      "usage_by_device": {
+        "kind": "Panel",
+        "spec": {
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "hidden": false,
+                    "query": {
+                      "datasource": {
+                        "name": "${datasource}"
+                      },
+                      "group": "prometheus",
+                      "kind": "DataQuery",
+                      "spec": {
+                        "expr": "sum by (family, child, device) (family_link_app_device_usage_seconds{job=~\"$job\", family=~\"$family\", child=~\"$child\"})"
+                      },
+                      "version": "v0"
+                    },
+                    "refId": "A"
+                  }
+                }
+              ],
+              "queryOptions": {},
+              "transformations": []
+            }
+          },
+          "description": "",
+          "id": 7,
+          "links": [],
+          "title": "Screen time today by device",
+          "transparent": false,
+          "vizConfig": {
+            "group": "timeseries",
+            "kind": "VizConfig",
+            "spec": {
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "s"
+                },
+                "overrides": []
+              },
+              "options": {}
+            },
+            "version": ""
+          }
+        }
+      },
+      "usage_by_device_table": {
+        "kind": "Panel",
+        "spec": {
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "hidden": false,
+                    "query": {
+                      "datasource": {
+                        "name": "${datasource}"
+                      },
+                      "group": "prometheus",
+                      "kind": "DataQuery",
+                      "spec": {
+                        "expr": "sum by (family, child, device) (family_link_app_device_usage_seconds{job=~\"$job\", family=~\"$family\", child=~\"$child\"})",
+                        "format": "table",
+                        "instant": true,
+                        "range": false
+                      },
+                      "version": "v0"
+                    },
+                    "refId": "A"
+                  }
+                }
+              ],
+              "queryOptions": {},
+              "transformations": []
+            }
+          },
+          "description": "",
+          "id": 8,
+          "links": [],
+          "title": "Screen time today by device",
+          "transparent": false,
+          "vizConfig": {
+            "group": "table",
+            "kind": "VizConfig",
+            "spec": {
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "s"
                 },
                 "overrides": []
               },
@@ -337,7 +448,7 @@
                           "name": "apps"
                         },
                         "height": 6,
-                        "width": 12,
+                        "width": 6,
                         "x": 0,
                         "y": 0
                       }
@@ -350,8 +461,8 @@
                           "name": "screen_time"
                         },
                         "height": 6,
-                        "width": 12,
-                        "x": 12,
+                        "width": 6,
+                        "x": 6,
                         "y": 0
                       }
                     },
@@ -363,9 +474,9 @@
                           "name": "up"
                         },
                         "height": 6,
-                        "width": 12,
-                        "x": 0,
-                        "y": 6
+                        "width": 6,
+                        "x": 12,
+                        "y": 0
                       }
                     }
                   ]
@@ -387,7 +498,47 @@
                       "spec": {
                         "element": {
                           "kind": "ElementReference",
-                          "name": "app_limit"
+                          "name": "limit_by_app"
+                        },
+                        "height": 9,
+                        "width": 12,
+                        "x": 0,
+                        "y": 0
+                      }
+                    },
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "usage_by_app"
+                        },
+                        "height": 9,
+                        "width": 12,
+                        "x": 12,
+                        "y": 0
+                      }
+                    }
+                  ]
+                }
+              },
+              "title": "Apps"
+            }
+          },
+          {
+            "kind": "RowsLayoutRow",
+            "spec": {
+              "collapse": false,
+              "layout": {
+                "kind": "GridLayout",
+                "spec": {
+                  "items": [
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "usage_by_device"
                         },
                         "height": 7,
                         "width": 12,
@@ -400,14 +551,28 @@
                       "spec": {
                         "element": {
                           "kind": "ElementReference",
-                          "name": "app_usage"
+                          "name": "usage_by_device_table"
                         },
                         "height": 7,
                         "width": 12,
                         "x": 12,
                         "y": 0
                       }
-                    },
+                    }
+                  ]
+                }
+              },
+              "title": "Devices"
+            }
+          },
+          {
+            "kind": "RowsLayoutRow",
+            "spec": {
+              "collapse": false,
+              "layout": {
+                "kind": "GridLayout",
+                "spec": {
+                  "items": [
                     {
                       "kind": "GridLayoutItem",
                       "spec": {
@@ -415,16 +580,16 @@
                           "kind": "ElementReference",
                           "name": "scrape_duration"
                         },
-                        "height": 7,
+                        "height": 6,
                         "width": 12,
                         "x": 0,
-                        "y": 7
+                        "y": 0
                       }
                     }
                   ]
                 }
               },
-              "title": "Usage & health"
+              "title": "Health"
             }
           }
         ]
@@ -470,7 +635,7 @@
             "kind": "DataQuery",
             "spec": {
               "qryType": 1,
-              "query": "label_values(family_link_up, job)",
+              "query": "label_values(family_link_apps_total, job)",
               "refId": "A"
             },
             "version": "v0"
@@ -496,7 +661,33 @@
             "kind": "DataQuery",
             "spec": {
               "qryType": 1,
-              "query": "label_values(family_link_up{job=~\"$job\"}, family)",
+              "query": "label_values(family_link_apps_total{job=~\"$job\"}, family)",
+              "refId": "A"
+            },
+            "version": "v0"
+          }
+        }
+      },
+      {
+        "kind": "QueryVariable",
+        "spec": {
+          "current": {
+            "text": "All",
+            "value": "$__all"
+          },
+          "includeAll": true,
+          "label": "Child",
+          "multi": true,
+          "name": "child",
+          "query": {
+            "datasource": {
+              "name": "${datasource}"
+            },
+            "group": "prometheus",
+            "kind": "DataQuery",
+            "spec": {
+              "qryType": 1,
+              "query": "label_values(family_link_apps_total{job=~\"$job\", family=~\"$family\"}, child)",
               "refId": "A"
             },
             "version": "v0"

@@ -11,9 +11,9 @@ groups:
       severity: critical
   - alert: FamilyLinkExporterUnhealthy
     annotations:
-      description: family_link_up is 0 on {{ $labels.instance }} (the Google session
-        likely expired; refresh it).
-      summary: family-link-exporter cannot reach the Kids Management API.
+      description: family_link_up is 0 for family {{ $labels.family }} on {{ $labels.instance
+        }} (the Google session likely expired; refresh it).
+      summary: family-link-exporter cannot reach the Kids Management API for a family.
     expr: family_link_up{job="family-link-exporter"} == 0
     for: 15m
     labels:

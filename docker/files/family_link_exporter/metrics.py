@@ -70,8 +70,13 @@ class FamilyLinkCollector:
         app_labels = ["family", "child", "account_id", "package", "app"]
         usage = GaugeMetricFamily(
             f"{NAMESPACE}_app_usage_seconds",
-            "Per-app screen time used today.",
+            "Per-app screen time used today (summed across devices).",
             labels=app_labels,
+        )
+        device_usage = GaugeMetricFamily(
+            f"{NAMESPACE}_app_device_usage_seconds",
+            "Per-app, per-device screen time used today.",
+            labels=["family", "child", "account_id", "device", "model", "package", "app"],
         )
         limit = GaugeMetricFamily(
             f"{NAMESPACE}_app_daily_limit_minutes",
@@ -112,6 +117,13 @@ class FamilyLinkCollector:
                     if app.daily_limit_minutes is not None:
                         limit.add_metric(avals, app.daily_limit_minutes)
 
+                for du in child.device_usages:
+                    device_usage.add_metric(
+                        [fam.name, child.name, child.account_id, du.device,
+                         du.model, du.package, du.title],
+                        du.usage_seconds,
+                    )
+
                 for dev in child.devices:
                     if dev.last_activity_seconds is None:
                         continue
@@ -124,6 +136,7 @@ class FamilyLinkCollector:
         yield screen_time
         yield apps_total
         yield usage
+        yield device_usage
         yield limit
         yield blocked
         yield always_allowed

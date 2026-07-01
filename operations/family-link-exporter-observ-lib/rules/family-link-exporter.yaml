@@ -1,5 +1,5 @@
 groups:
 - name: family-link-exporter
   rules:
-  - expr: sum by (instance) (family_link_screen_time_seconds{job="family-link-exporter"})
-    record: instance:family_link_screen_time_seconds:sum
+  - expr: sum by (family) (family_link_screen_time_seconds{job="family-link-exporter"})
+    record: family:family_link_screen_time_seconds:sum

@@ -38,11 +38,24 @@ class DeviceSnapshot:
 
 
 @dataclass
+class DeviceAppUsage:
+    """Per-app, per-device screen time today (the device dimension we otherwise
+    sum away for the per-app total)."""
+
+    device: str
+    model: str
+    package: str
+    title: str
+    usage_seconds: float = 0.0
+
+
+@dataclass
 class ChildSnapshot:
     account_id: str
     name: str
     apps: list[AppSnapshot] = field(default_factory=list)
     devices: list[DeviceSnapshot] = field(default_factory=list)
+    device_usages: list[DeviceAppUsage] = field(default_factory=list)
 
     @property
     def total_usage_seconds(self) -> float:
@@ -79,6 +92,7 @@ class Snapshot:
                             "total_usage_seconds": round(c.total_usage_seconds, 1),
                             "apps": [vars(a) for a in c.apps],
                             "devices": [vars(d) for d in c.devices],
+                            "device_usages": [vars(u) for u in c.device_usages],
                         }
                         for c in f.children
                     ],
@@ -122,19 +136,38 @@ def build_child_snapshot(
             always_allowed=setting.always_allowed,
         )
 
-    # Usage is summed across devices for the current day.
+    # Map a session's deviceMudId to a friendly device name (falling back to the
+    # id itself if the ids don't line up with deviceInfo).
+    device_map = {
+        dev.device_id: (dev.display_info.friendly_name or dev.device_id, dev.display_info.model)
+        for dev in data.device_info
+    }
+
+    # Accumulate usage per-app (summed across devices) AND per-app-per-device.
+    device_usage: dict[tuple[str, str], DeviceAppUsage] = {}
     for session in data.app_usage_sessions:
         if (session.date.year, session.date.month, session.date.day) != today:
             continue
         package = session.app_id.android_app_package_name
         if not package:
             continue
+        seconds = session.usage_seconds()
+
         snap = apps.get(package)
         if snap is None:
             # Usage for an app no longer in the installed list -> keep it anyway.
             snap = AppSnapshot(package=package, title=package)
             apps[package] = snap
-        snap.usage_seconds += session.usage_seconds()
+        snap.usage_seconds += seconds
+
+        mud = session.device_mud_id or "unknown"
+        device_name, model = device_map.get(mud, (mud, ""))
+        key = (device_name, package)
+        du = device_usage.get(key)
+        if du is None:
+            du = DeviceAppUsage(device=device_name, model=model, package=package, title=snap.title)
+            device_usage[key] = du
+        du.usage_seconds += seconds
 
     devices = [
         DeviceSnapshot(
@@ -153,6 +186,7 @@ def build_child_snapshot(
         name=name,
         apps=list(apps.values()),
         devices=devices,
+        device_usages=list(device_usage.values()),
     )
 
 

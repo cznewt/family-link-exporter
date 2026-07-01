@@ -10,11 +10,11 @@ local pack = import 'libs/common-lib/pack.libsonnet';
     local cfg = (import 'config.libsonnet') + config;
     local s = cfg.signals.family_link;
 
-    // Dashboard panel groups.
+    // Dashboard panel groups. Filter with the $family and $child dropdowns.
     local groups = [
       {
         title: 'Overview',
-        width: 12,
+        width: 6,
         height: 6,
         elements: {
           up: s.up.asStat('Exporter up'),
@@ -23,18 +23,33 @@ local pack = import 'libs/common-lib/pack.libsonnet';
         },
       },
       {
-        title: 'Usage & health',
+        title: 'Apps',
+        width: 12,
+        height: 9,
+        elements: {
+          usage_by_app: s.usageByApp.asTable('Screen time today by app'),
+          limit_by_app: s.limitByApp.asTable('Daily limits by app'),
+        },
+      },
+      {
+        title: 'Devices',
         width: 12,
         height: 7,
         elements: {
-          app_usage: s.appUsage.asTimeSeries('App usage today (per app)'),
-          app_limit: s.appLimit.asTimeSeries('Configured daily limits'),
-          scrape_duration: s.scrapeDuration.asTimeSeries('Scrape duration'),
+          usage_by_device: s.usageByDevice.asTimeSeries('Screen time today by device'),
+          usage_by_device_table: s.usageByDevice.asTable('Screen time today by device'),
+        },
+      },
+      {
+        title: 'Health',
+        width: 12,
+        height: 6,
+        elements: {
+          scrape_duration: s.scrapeDuration.asTimeSeries('Scrape duration (per family)'),
         },
       },
     ];
 
-    // All signals, for the pack .signals accessor.
     local allSignals = { ['family_link_' + k]: s[k] for k in std.objectFields(s) };
 
     local alerts = [
@@ -57,8 +72,8 @@ local pack = import 'libs/common-lib/pack.libsonnet';
             'for': cfg.unhealthyFor,
             labels: { severity: 'warning' },
             annotations: {
-              summary: 'family-link-exporter cannot reach the Kids Management API.',
-              description: 'family_link_up is 0 on {{ $labels.instance }} (the Google session likely expired; refresh it).',
+              summary: 'family-link-exporter cannot reach the Kids Management API for a family.',
+              description: 'family_link_up is 0 for family {{ $labels.family }} on {{ $labels.instance }} (the Google session likely expired; refresh it).',
             },
           },
           {
@@ -80,8 +95,8 @@ local pack = import 'libs/common-lib/pack.libsonnet';
         name: 'family-link-exporter',
         rules: [
           {
-            record: 'instance:family_link_screen_time_seconds:sum',
-            expr: 'sum by (instance) (family_link_screen_time_seconds{' + cfg.exporterSelector + '})',
+            record: 'family:family_link_screen_time_seconds:sum',
+            expr: 'sum by (family) (family_link_screen_time_seconds{' + cfg.exporterSelector + '})',
           },
         ],
       },
