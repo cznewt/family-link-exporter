@@ -1,0 +1,88 @@
+# Default values for family-link-exporter
+replicaCount: 1
+
+image:
+  repository: ghcr.io/cznewt/family-link-exporter
+  pullPolicy: IfNotPresent
+  # Defaults to the chart appVersion when empty.
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "9838"
+  prometheus.io/path: "/metrics"
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  fsGroup: 10001
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+
+service:
+  type: ClusterIP
+  port: 9838
+  annotations: {}
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# --- Google session credentials -------------------------------------------
+# The exporter needs a logged-in Google session (a Playwright storage_state
+# JSON captured with `python -m family_link_exporter login`). Provide it via an
+# existing Secret (recommended), or inline it here and let the chart create one.
+# With neither set, the pod runs but cannot authenticate (family_link_up == 0).
+auth:
+  # Name of an existing Secret holding the session under `key`. Preferred.
+  existingSecret: ""
+  # Or paste storage_state.json content (chart creates a Secret). Keep out of git!
+  # Tip: helm install ... --set-file auth.storageState=./storage_state.json
+  storageState: ""
+  # Key within the Secret and the filename mounted into the container.
+  key: storage_state.json
+  # Directory the session is mounted into (read-only).
+  mountPath: /etc/family-link-exporter
+
+# --- Exporter configuration (FLE_* env vars) ------------------------------
+config:
+  # Timezone used to decide the daily "today" boundary. Set to the child's tz.
+  timezone: "Europe/Prague"
+  # Seconds between Kids Management API polls.
+  refreshInterval: 900
+  # Restrict to specific child account ids (comma-separated). Empty = all supervised.
+  accountIds: ""
+  logLevel: INFO
+
+# Extra raw env vars, e.g. [{name: FLE_API_KEY, value: "..."}]
+extraEnv: []
+
+# ServiceMonitor for the Prometheus Operator
+serviceMonitor:
+  enabled: false
+  interval: 60s
+  scrapeTimeout: 30s
+  labels: {}
+  annotations: {}

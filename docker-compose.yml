@@ -1,0 +1,17 @@
+services:
+  family-link-exporter:
+    build:
+      context: ./docker
+      dockerfile: Dockerfile
+    image: ghcr.io/cznewt/family-link-exporter:latest
+    environment:
+      # Session captured with: python -m family_link_exporter login
+      FLE_STORAGE_STATE: /etc/family-link-exporter/storage_state.json
+      FLE_TIMEZONE: ${FLE_TIMEZONE:-Europe/Prague}
+      FLE_REFRESH_INTERVAL: "900"
+      FLE_LOG_LEVEL: INFO
+    volumes:
+      - ./storage_state.json:/etc/family-link-exporter/storage_state.json:ro
+    ports:
+      - "9838:9838"
+    restart: unless-stopped

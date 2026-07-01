@@ -1,0 +1,16 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: family-link-exporter
+  title: Family Link Exporter
+  description: Read-only Prometheus exporter for Google Family Link screen-time usage and parental-control settings.
+  tags:
+    - monitoring
+    - prometheus
+    - exporter
+  annotations:
+    github.com/project-slug: cznewt/family-link-exporter
+    backstage.io/techdocs-ref: dir:.
+spec:
+  type: service
+  lifecycle: experimental

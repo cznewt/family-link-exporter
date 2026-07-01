@@ -1,0 +1,23 @@
+family-link-exporter is installed as {{ include "family-link-exporter.fullname" . }}.
+
+Metrics endpoint (in-cluster):
+  http://{{ include "family-link-exporter.fullname" . }}.{{ .Release.Namespace }}.svc:{{ .Values.service.port }}/metrics
+
+Port-forward to try it:
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "family-link-exporter.fullname" . }} {{ .Values.service.port }}:{{ .Values.service.port }}
+  curl -s localhost:{{ .Values.service.port }}/metrics | grep family_link_
+
+{{- if not (include "family-link-exporter.hasSession" .) }}
+
+WARNING: no Google session configured, so the exporter cannot authenticate and
+family_link_up will be 0. Capture a session locally with:
+
+  pip install playwright && playwright install chromium
+  python -m family_link_exporter login -o storage_state.json
+
+then create a Secret and set auth.existingSecret (recommended):
+
+  kubectl -n {{ .Release.Namespace }} create secret generic family-link-session \
+    --from-file=storage_state.json=./storage_state.json
+  helm upgrade {{ .Release.Name }} ... --set auth.existingSecret=family-link-session
+{{- end }}
