@@ -1,4 +1,17 @@
-"""Runtime configuration, loaded from environment variables (12-factor)."""
+"""Runtime configuration, loaded from environment variables (12-factor).
+
+Single family (default): credentials come from FLE_STORAGE_STATE / FLE_COOKIE_FILE
+/ FLE_COOKIE_BROWSER, labelled with FLE_FAMILY_NAME (default "default").
+
+Multiple families: point FLE_CONFIG at a YAML file:
+
+    families:
+      - name: smith
+        cookieFile: /etc/family-link/families/smith/cookies.txt
+      - name: jones
+        storageState: /etc/family-link/families/jones/storage_state.json
+        accountIds: ["123"]      # optional; default = all supervised kids
+"""
 
 from __future__ import annotations
 
@@ -22,17 +35,56 @@ def _split_csv(value: str | None) -> list[str]:
 
 
 @dataclass
+class Family:
+    """One supervised family = one parent Google account + its credential."""
+
+    name: str
+    storage_state_path: str | None = None
+    cookie_file_path: str | None = None
+    cookie_browser: str | None = None
+    # Empty -> auto-discover every supervised member of this family.
+    account_ids: list[str] = field(default_factory=list)
+
+    def has_credential_source(self) -> bool:
+        return any(
+            [self.storage_state_path, self.cookie_file_path, self.cookie_browser]
+        )
+
+    def validate(self) -> None:
+        if not self.has_credential_source():
+            raise ValueError(
+                f"Family {self.name!r}: no credential source "
+                "(need one of storageState / cookieFile / cookieBrowser)."
+            )
+
+
+def _load_families(path: str) -> list[Family]:
+    import yaml  # pyyaml; only needed in multi-family mode
+
+    with open(path, encoding="utf-8") as fh:
+        data = yaml.safe_load(fh) or {}
+
+    families: list[Family] = []
+    for i, item in enumerate(data.get("families", [])):
+        families.append(
+            Family(
+                name=str(item.get("name") or f"family-{i}"),
+                storage_state_path=item.get("storageState"),
+                cookie_file_path=item.get("cookieFile"),
+                cookie_browser=item.get("cookieBrowser"),
+                account_ids=[str(a) for a in (item.get("accountIds") or [])],
+            )
+        )
+    if not families:
+        raise ValueError(f"FLE_CONFIG {path!r} defines no families")
+    return families
+
+
+@dataclass
 class Config:
     """All exporter settings. Prefix every env var with ``FLE_``."""
 
-    # --- Authentication (pick exactly one source) ---
-    storage_state_path: str | None = None  # FLE_STORAGE_STATE  (Playwright JSON)
-    cookie_file_path: str | None = None     # FLE_COOKIE_FILE    (Netscape cookies.txt)
-    cookie_browser: str | None = None       # FLE_COOKIE_BROWSER (firefox|chrome|...)
-
-    # --- What to export ---
-    # Empty -> auto-discover every supervised member of the family.
-    account_ids: list[str] = field(default_factory=list)  # FLE_ACCOUNT_IDS
+    families: list[Family] = field(default_factory=list)
 
     # --- HTTP server ---
     host: str = "0.0.0.0"  # FLE_HOST
@@ -56,11 +108,22 @@ class Config:
             except ZoneInfoNotFoundError as exc:
                 raise ValueError(f"Unknown FLE_TIMEZONE {tz_name!r}") from exc
 
+        config_path = env.get("FLE_CONFIG")
+        if config_path:
+            families = _load_families(config_path)
+        else:
+            families = [
+                Family(
+                    name=env.get("FLE_FAMILY_NAME", "default"),
+                    storage_state_path=env.get("FLE_STORAGE_STATE"),
+                    cookie_file_path=env.get("FLE_COOKIE_FILE"),
+                    cookie_browser=env.get("FLE_COOKIE_BROWSER"),
+                    account_ids=_split_csv(env.get("FLE_ACCOUNT_IDS")),
+                )
+            ]
+
         return cls(
-            storage_state_path=env.get("FLE_STORAGE_STATE"),
-            cookie_file_path=env.get("FLE_COOKIE_FILE"),
-            cookie_browser=env.get("FLE_COOKIE_BROWSER"),
-            account_ids=_split_csv(env.get("FLE_ACCOUNT_IDS")),
+            families=families,
             host=env.get("FLE_HOST", "0.0.0.0"),
             port=int(env.get("FLE_PORT", DEFAULT_PORT)),
             refresh_interval=int(env.get("FLE_REFRESH_INTERVAL", DEFAULT_REFRESH_INTERVAL)),
@@ -70,13 +133,4 @@ class Config:
         )
 
     def has_credential_source(self) -> bool:
-        return any(
-            [self.storage_state_path, self.cookie_file_path, self.cookie_browser]
-        )
-
-    def validate(self) -> None:
-        if not self.has_credential_source():
-            raise ValueError(
-                "No credential source configured. Set one of FLE_STORAGE_STATE, "
-                "FLE_COOKIE_FILE or FLE_COOKIE_BROWSER."
-            )
+        return any(f.has_credential_source() for f in self.families)

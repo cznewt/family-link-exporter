@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from .client import FamilyLinkClient
-from .config import Config
+from .config import Config, Family
 from .models import AppUsage, MembersResponse
 
 logger = logging.getLogger(__name__)
@@ -50,28 +50,40 @@ class ChildSnapshot:
 
 
 @dataclass
-class Snapshot:
-    children: list[ChildSnapshot] = field(default_factory=list)
+class FamilySnapshot:
+    name: str
     success: bool = False
-    duration_seconds: float = 0.0
-    timestamp: float = 0.0
     error: str | None = None
+    duration_seconds: float = 0.0
+    children: list[ChildSnapshot] = field(default_factory=list)
+
+
+@dataclass
+class Snapshot:
+    families: list[FamilySnapshot] = field(default_factory=list)
+    timestamp: float = 0.0
 
     def to_dict(self) -> dict:
         return {
-            "success": self.success,
             "timestamp": self.timestamp,
-            "duration_seconds": round(self.duration_seconds, 3),
-            "error": self.error,
-            "children": [
+            "families": [
                 {
-                    "account_id": c.account_id,
-                    "name": c.name,
-                    "total_usage_seconds": round(c.total_usage_seconds, 1),
-                    "apps": [vars(a) for a in c.apps],
-                    "devices": [vars(d) for d in c.devices],
+                    "name": f.name,
+                    "success": f.success,
+                    "error": f.error,
+                    "duration_seconds": round(f.duration_seconds, 3),
+                    "children": [
+                        {
+                            "account_id": c.account_id,
+                            "name": c.name,
+                            "total_usage_seconds": round(c.total_usage_seconds, 1),
+                            "apps": [vars(a) for a in c.apps],
+                            "devices": [vars(d) for d in c.devices],
+                        }
+                        for c in f.children
+                    ],
                 }
-                for c in self.children
+                for f in self.families
             ],
         }
 
@@ -145,9 +157,9 @@ def build_child_snapshot(
 
 
 def _resolve_targets(
-    config: Config, client: FamilyLinkClient
+    family: Family, client: FamilyLinkClient
 ) -> tuple[list[str], dict[str, str]]:
-    """Return (account_ids, id -> display name). Names best-effort."""
+    """Return (account_ids, id -> display name) for one family. Names best-effort."""
     names: dict[str, str] = {}
     members: MembersResponse | None = None
     try:
@@ -155,11 +167,11 @@ def _resolve_targets(
         for member in members.members:
             names[member.user_id] = member.label
     except Exception:  # noqa: BLE001 - names are optional, keep going
-        logger.warning("Could not fetch member names", exc_info=True)
+        logger.warning("Family %s: could not fetch member names", family.name, exc_info=True)
 
     # Explicit allow-list wins.
-    if config.account_ids:
-        return config.account_ids, names
+    if family.account_ids:
+        return family.account_ids, names
 
     # Otherwise export every supervised child we can see.
     if members is not None:
@@ -173,38 +185,45 @@ def _resolve_targets(
     return client.supervised_account_ids(), names
 
 
-def collect_snapshot(config: Config) -> Snapshot:
-    """Fetch everything once and return a normalized snapshot.
-
-    Builds its own client from ``config`` so a rotated session file is picked up
-    each call, and any credential/API problem (including no credentials at all)
-    is caught and surfaced as an unhealthy scrape (``success=False``) rather than
-    crashing the process.
-    """
+def collect_family(family: Family, config: Config, today: tuple[int, int, int]) -> FamilySnapshot:
+    """Collect one family. Any credential/API problem -> unhealthy (success=False)."""
     started = time.monotonic()
-    now = datetime.now(config.timezone)
-    today = (now.year, now.month, now.day)
-
     try:
-        config.validate()
-        with FamilyLinkClient(config) as client:
-            account_ids, names = _resolve_targets(config, client)
+        family.validate()
+        with FamilyLinkClient(family, config.api_key) as client:
+            account_ids, names = _resolve_targets(family, client)
             children: list[ChildSnapshot] = []
             for account_id in account_ids:
                 data = client.get_apps_and_usage(account_id)
                 name = names.get(account_id, account_id)
                 children.append(build_child_snapshot(account_id, name, data, today))
-
-        snapshot = Snapshot(children=children, success=True)
+        snap = FamilySnapshot(name=family.name, success=True, children=children)
         logger.info(
-            "Collected %d child profile(s), %d app rows",
+            "Family %s: collected %d child profile(s), %d app rows",
+            family.name,
             len(children),
             sum(len(c.apps) for c in children),
         )
     except Exception as exc:  # noqa: BLE001 - surface as an unhealthy scrape
-        logger.error("Collection failed: %s", exc, exc_info=logger.isEnabledFor(logging.DEBUG))
-        snapshot = Snapshot(success=False, error=str(exc))
+        logger.error(
+            "Family %s: collection failed: %s",
+            family.name,
+            exc,
+            exc_info=logger.isEnabledFor(logging.DEBUG),
+        )
+        snap = FamilySnapshot(name=family.name, success=False, error=str(exc))
 
-    snapshot.duration_seconds = time.monotonic() - started
-    snapshot.timestamp = time.time()
-    return snapshot
+    snap.duration_seconds = time.monotonic() - started
+    return snap
+
+
+def collect_snapshot(config: Config) -> Snapshot:
+    """Collect every configured family and return a normalized snapshot.
+
+    Builds a fresh client per family each call, so a rotated session file is
+    picked up without a restart and one family's failure never affects another.
+    """
+    now = datetime.now(config.timezone)
+    today = (now.year, now.month, now.day)
+    families = [collect_family(family, config, today) for family in config.families]
+    return Snapshot(families=families, timestamp=time.time())

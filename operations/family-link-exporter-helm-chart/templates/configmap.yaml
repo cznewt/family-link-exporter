@@ -1,0 +1,24 @@
+{{- if .Values.families }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "family-link-exporter.fullname" . }}-config
+  labels:
+    {{- include "family-link-exporter.labels" . | nindent 4 }}
+data:
+  config.yaml: |
+    families:
+    {{- range .Values.families }}
+    {{- $cookie := eq (.mode | default "storageState") "cookieFile" }}
+    {{- $key := .key | default (ternary "cookies.txt" "storage_state.json" $cookie) }}
+      - name: {{ .name }}
+    {{- if $cookie }}
+        cookieFile: /etc/family-link/families/{{ .name }}/{{ $key }}
+    {{- else }}
+        storageState: /etc/family-link/families/{{ .name }}/{{ $key }}
+    {{- end }}
+    {{- with .accountIds }}
+        accountIds: {{ toJson . }}
+    {{- end }}
+    {{- end }}
+{{- end }}

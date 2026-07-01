@@ -7,7 +7,7 @@ Port-forward to try it:
   kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "family-link-exporter.fullname" . }} {{ .Values.service.port }}:{{ .Values.service.port }}
   curl -s localhost:{{ .Values.service.port }}/metrics | grep family_link_
 
-{{- if not (include "family-link-exporter.hasSession" .) }}
+{{- if not (or .Values.families (include "family-link-exporter.hasSession" .)) }}
 
 WARNING: no Google session configured, so the exporter cannot authenticate and
 family_link_up will be 0. Capture a session locally with:

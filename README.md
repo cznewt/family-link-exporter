@@ -108,6 +108,31 @@ Two ways around it:
    chart, set `auth.mode=cookieFile`, `auth.key=cookies.txt` and put the file in
    the Secret.
 
+## Multiple families
+
+Export several families (parent accounts) from one exporter — every metric gets a
+`family="<name>"` label, and each family is fetched independently (one family's
+expired session only sets its own `family_link_up{family="…"}` to 0). Point
+`FLE_CONFIG` at a YAML file:
+
+```yaml
+families:
+  - name: smith
+    cookieFile: /etc/family-link/families/smith/cookies.txt
+  - name: jones
+    storageState: /etc/family-link/families/jones/storage_state.json
+    accountIds: ["123"]        # optional; default = all supervised kids
+```
+
+In the chart, set `families:` — one entry per family, each referencing its own
+Secret; the chart renders the config into a ConfigMap and mounts each Secret:
+
+```yaml
+families:
+  - { name: smith, mode: cookieFile,   existingSecret: smith-session, key: cookies.txt }
+  - { name: jones, mode: storageState, existingSecret: jones-session, key: storage_state.json }
+```
+
 ## Repository layout
 
 ```

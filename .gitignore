@@ -1,5 +1,6 @@
 # Credentials — never commit these
-storage_state.json
+storage_state*.json
+*cookies*.txt
 cookies.txt
 .env
 

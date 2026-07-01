@@ -6,8 +6,13 @@ data pipeline can be verified without a Google account.
 
 from __future__ import annotations
 
-from family_link_exporter.collector import Snapshot, build_child_snapshot, collect_snapshot
-from family_link_exporter.config import Config
+from family_link_exporter.collector import (
+    FamilySnapshot,
+    Snapshot,
+    build_child_snapshot,
+    collect_snapshot,
+)
+from family_link_exporter.config import Config, Family
 from family_link_exporter.metrics import FamilyLinkCollector
 from family_link_exporter.models import AppUsage
 
@@ -85,7 +90,10 @@ def test_total_and_device():
 
 
 def test_collector_renders_metrics():
-    snapshot = Snapshot(children=[_child()], success=True, duration_seconds=0.1, timestamp=1.0)
+    snapshot = Snapshot(
+        families=[FamilySnapshot(name="smith", success=True, children=[_child()])],
+        timestamp=1.0,
+    )
     collector = FamilyLinkCollector()
     collector.update(snapshot)
 
@@ -94,15 +102,20 @@ def test_collector_renders_metrics():
         for sample in family.samples:
             samples.setdefault(sample.name, []).append(sample)
 
-    assert any(s.value == 1.0 for s in samples["family_link_up"])
+    up = {s.labels["family"]: s.value for s in samples["family_link_up"]}
+    assert up["smith"] == 1.0
     usage = {s.labels["package"]: s.value for s in samples["family_link_app_usage_seconds"]}
     assert usage["com.spotify.music"] == 2400.5
-    screen = {s.labels["child"]: s.value for s in samples["family_link_screen_time_seconds"]}
-    assert screen["Alex"] == 2700.5
+    screen = {
+        (s.labels["family"], s.labels["child"]): s.value
+        for s in samples["family_link_screen_time_seconds"]
+    }
+    assert screen[("smith", "Alex")] == 2700.5
 
 
 def test_collect_snapshot_without_credentials_is_unhealthy():
-    # No credential source -> the scrape reports unhealthy instead of crashing.
-    snapshot = collect_snapshot(Config())
-    assert snapshot.success is False
-    assert "credential" in (snapshot.error or "").lower()
+    # A family with no credential source -> that family reports unhealthy, no crash.
+    snapshot = collect_snapshot(Config(families=[Family(name="nocreds")]))
+    fam = snapshot.families[0]
+    assert fam.success is False
+    assert "credential" in (fam.error or "").lower()

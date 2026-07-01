@@ -12,7 +12,7 @@ import logging
 import httpx
 
 from .auth import load_credentials
-from .config import Config
+from .config import Family
 from .models import AppUsage, MembersResponse
 
 logger = logging.getLogger(__name__)
@@ -21,9 +21,9 @@ logger = logging.getLogger(__name__)
 class FamilyLinkClient:
     BASE_URL = "https://kidsmanagement-pa.clients6.google.com/kidsmanagement/v1"
 
-    def __init__(self, config: Config):
-        self._config = config
-        cookies, auth = load_credentials(config)
+    def __init__(self, family: Family, api_key: str):
+        self.family = family
+        cookies, auth = load_credentials(family)
         self._client = httpx.Client(
             base_url=self.BASE_URL,
             cookies=cookies,
@@ -35,7 +35,7 @@ class FamilyLinkClient:
                 ),
                 "Origin": "https://familylink.google.com",
                 "Content-Type": "application/json",
-                "X-Goog-Api-Key": config.api_key,
+                "X-Goog-Api-Key": api_key,
             },
             timeout=30.0,
         )

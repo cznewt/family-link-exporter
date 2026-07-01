@@ -59,11 +59,28 @@ nodeSelector: {}
 tolerations: []
 affinity: {}
 
-# --- Google session credentials -------------------------------------------
+# --- Multiple families -----------------------------------------------------
+# One entry per parent Google account. Each references an existing Secret
+# holding that family's credential; the chart renders an FLE_CONFIG file and
+# mounts each Secret. Metrics are labelled with `family: <name>`.
+# Leave empty ([]) to use the single-family `auth` block below instead.
+families: []
+#  - name: smith
+#    mode: cookieFile          # or storageState
+#    existingSecret: smith-session
+#    key: cookies.txt          # the key in the Secret (and mounted filename)
+#  - name: jones
+#    mode: storageState
+#    existingSecret: jones-session
+#    key: storage_state.json
+#    accountIds: []            # optional; default = all supervised kids
+
+# --- Single-family credentials (used when `families` is empty) --------------
 # The exporter needs a logged-in Google session (a Playwright storage_state
-# JSON captured with `python -m family_link_exporter login`). Provide it via an
-# existing Secret (recommended), or inline it here and let the chart create one.
-# With neither set, the pod runs but cannot authenticate (family_link_up == 0).
+# JSON captured with `python -m family_link_exporter login`, or a cookies.txt).
+# Provide it via an existing Secret (recommended), or inline it here and let the
+# chart create one. With neither set, the pod runs but cannot authenticate
+# (family_link_up == 0).
 auth:
   # Credential format in the Secret:
   #   storageState -> a Playwright storage_state.json (from `... login`)

@@ -45,7 +45,10 @@ spec:
               value: {{ .Values.config.accountIds | quote }}
             - name: FLE_LOG_LEVEL
               value: {{ .Values.config.logLevel | quote }}
-            {{- if include "family-link-exporter.hasSession" . }}
+            {{- if .Values.families }}
+            - name: FLE_CONFIG
+              value: /etc/family-link/config/config.yaml
+            {{- else if include "family-link-exporter.hasSession" . }}
             {{- if eq .Values.auth.mode "cookieFile" }}
             - name: FLE_COOKIE_FILE
               value: "{{ .Values.auth.mountPath }}/{{ .Values.auth.key }}"
@@ -75,7 +78,17 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 5
-          {{- if include "family-link-exporter.hasSession" . }}
+          {{- if .Values.families }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/family-link/config
+              readOnly: true
+            {{- range .Values.families }}
+            - name: family-{{ .name }}
+              mountPath: /etc/family-link/families/{{ .name }}
+              readOnly: true
+            {{- end }}
+          {{- else if include "family-link-exporter.hasSession" . }}
           volumeMounts:
             - name: google-session
               mountPath: {{ .Values.auth.mountPath }}
@@ -83,7 +96,22 @@ spec:
           {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-      {{- if include "family-link-exporter.hasSession" . }}
+      {{- if .Values.families }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "family-link-exporter.fullname" . }}-config
+        {{- range .Values.families }}
+        {{- $cookie := eq (.mode | default "storageState") "cookieFile" }}
+        {{- $key := .key | default (ternary "cookies.txt" "storage_state.json" $cookie) }}
+        - name: family-{{ .name }}
+          secret:
+            secretName: {{ required (printf "families[%s].existingSecret is required" .name) .existingSecret }}
+            items:
+              - key: {{ $key }}
+                path: {{ $key }}
+        {{- end }}
+      {{- else if include "family-link-exporter.hasSession" . }}
       volumes:
         - name: google-session
           secret:

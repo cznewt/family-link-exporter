@@ -83,7 +83,7 @@ def cmd_dump(config: Config) -> int:
     snapshot = collect_snapshot(config)
     json.dump(snapshot.to_dict(), sys.stdout, indent=2, ensure_ascii=False)
     sys.stdout.write("\n")
-    return 0 if snapshot.success else 1
+    return 0 if all(f.success for f in snapshot.families) else 1
 
 
 def cmd_login(args: argparse.Namespace) -> int:

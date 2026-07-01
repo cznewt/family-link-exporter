@@ -20,7 +20,7 @@ import time
 
 import httpx
 
-from .config import Config
+from .config import Family
 
 logger = logging.getLogger(__name__)
 
@@ -100,25 +100,25 @@ def _load_browser_cookies(browser: str) -> tuple[httpx.Cookies, str | None]:
     return httpx.Cookies(jar), _sapisid_from_jar(jar)
 
 
-def load_credentials(config: Config) -> tuple[httpx.Cookies, SapisidHashAuth]:
-    """Build the cookie jar and auth handler for an :class:`httpx.Client`."""
-    if config.storage_state_path:
-        source = f"storage_state {config.storage_state_path}"
-        cookies, sapisid = _load_storage_state(config.storage_state_path)
-    elif config.cookie_file_path:
-        source = f"cookie file {config.cookie_file_path}"
-        cookies, sapisid = _load_cookie_file(config.cookie_file_path)
-    elif config.cookie_browser:
-        source = f"browser {config.cookie_browser}"
-        cookies, sapisid = _load_browser_cookies(config.cookie_browser)
-    else:  # pragma: no cover - guarded by Config.validate()
-        raise AuthError("No credential source configured")
+def load_credentials(family: Family) -> tuple[httpx.Cookies, SapisidHashAuth]:
+    """Build the cookie jar and auth handler for one family's client."""
+    if family.storage_state_path:
+        source = f"storage_state {family.storage_state_path}"
+        cookies, sapisid = _load_storage_state(family.storage_state_path)
+    elif family.cookie_file_path:
+        source = f"cookie file {family.cookie_file_path}"
+        cookies, sapisid = _load_cookie_file(family.cookie_file_path)
+    elif family.cookie_browser:
+        source = f"browser {family.cookie_browser}"
+        cookies, sapisid = _load_browser_cookies(family.cookie_browser)
+    else:  # pragma: no cover - guarded by Family.validate()
+        raise AuthError(f"Family {family.name!r}: no credential source configured")
 
     if not sapisid:
         raise AuthError(
-            f"Could not find a SAPISID cookie in {source}. "
+            f"Family {family.name!r}: could not find a SAPISID cookie in {source}. "
             "Make sure the session is logged in to a Google account."
         )
 
-    logger.info("Loaded Google credentials from %s", source)
+    logger.info("Family %s: loaded Google credentials from %s", family.name, source)
     return cookies, SapisidHashAuth(sapisid, origin="https://familylink.google.com")
