@@ -1,5 +1,8 @@
 #!/usr/bin/env just --justfile
 
+# Auto-load .env (gitignored) so grafana-push picks up GRAFANA_URL / GRAFANA_TOKEN.
+set dotenv-load := true
+
 # Image + chart coordinates (override on the CLI, e.g. `just TAG=dev image`)
 REGISTRY := "ghcr.io"
 IMAGE := "cznewt/family-link-exporter"
@@ -88,3 +91,8 @@ observ-lib-build:
 # promtool-test the rendered alert rules (needs promtool on PATH)
 observ-lib-test:
     promtool test rules {{OBSERV_LIB}}/tests/*.yaml
+
+# Push the rendered dashboard(s) to Grafana. Set GRAFANA_URL + GRAFANA_TOKEN
+# (+ optional GRAFANA_NAMESPACE) in .env or the environment. See .env.example.
+grafana-push:
+    python3 {{OBSERV_LIB}}/push.py {{OBSERV_LIB}}/dashboards/*.json

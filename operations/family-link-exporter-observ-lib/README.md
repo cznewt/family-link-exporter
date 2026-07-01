@@ -27,8 +27,11 @@ outputs drift from the sources.
 
 ## Use
 
-- **Dashboard**: import `dashboards/family-link-exporter.json` into Grafana, or
-  provision it. It expects `datasource` and `job` template variables.
+- **Dashboard**: push it to Grafana with `just grafana-push` (set `GRAFANA_URL`
+  + `GRAFANA_TOKEN` [+ `GRAFANA_NAMESPACE`] in `.env` — see `.env.example`).
+  This POSTs the v2 resource to the app-platform API, the same way observ-viz's
+  `scripts/load.py` does. Or import `dashboards/family-link-exporter.json`
+  manually. It expects `datasource` and `job` template variables.
 - **Alerts / rules**: load the YAML into Prometheus/Mimir (or Grafana-managed
   rules). The alerts scope to `job="family-link-exporter"` — adjust
   `exporterSelector` in `config.libsonnet` if your scrape job differs.

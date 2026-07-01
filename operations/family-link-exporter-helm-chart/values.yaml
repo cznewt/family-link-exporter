@@ -16,6 +16,13 @@ serviceAccount:
   annotations: {}
   name: ""
 
+# Pod annotations for scrape autodiscovery. The default is the common
+# prometheus.io/* convention. For clusters running Grafana k8s-monitoring
+# (Alloy) — e.g. gedu — replace these with the k8s.grafana.com/* convention:
+#   k8s.grafana.com/scrape: "true"
+#   k8s.grafana.com/metrics.portName: "http"
+#   k8s.grafana.com/metrics.path: "/metrics"
+#   k8s.grafana.com/job: "family-link-exporter"
 podAnnotations:
   prometheus.io/scrape: "true"
   prometheus.io/port: "9838"
