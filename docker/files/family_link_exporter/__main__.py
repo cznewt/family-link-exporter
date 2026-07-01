@@ -89,7 +89,7 @@ def cmd_dump(config: Config) -> int:
 def cmd_login(args: argparse.Namespace) -> int:
     from .login import interactive_login
 
-    interactive_login(args.output, headless=args.headless)
+    interactive_login(args.output, headless=args.headless, channel=args.channel)
     return 0
 
 
@@ -107,6 +107,14 @@ def main(argv: list[str] | None = None) -> int:
     )
     login.add_argument(
         "--headless", action="store_true", help="Run the login browser headless"
+    )
+    login.add_argument(
+        "--channel",
+        default=None,
+        help="Browser channel to drive (e.g. 'chrome', 'msedge'). Uses your real "
+        "installed browser instead of bundled Chromium — needed to get past "
+        "Google's 'this browser may not be secure' block. Run `playwright install "
+        "chrome` first.",
     )
 
     args = parser.parse_args(argv)

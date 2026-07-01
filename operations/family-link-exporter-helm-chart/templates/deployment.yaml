@@ -46,8 +46,13 @@ spec:
             - name: FLE_LOG_LEVEL
               value: {{ .Values.config.logLevel | quote }}
             {{- if include "family-link-exporter.hasSession" . }}
+            {{- if eq .Values.auth.mode "cookieFile" }}
+            - name: FLE_COOKIE_FILE
+              value: "{{ .Values.auth.mountPath }}/{{ .Values.auth.key }}"
+            {{- else }}
             - name: FLE_STORAGE_STATE
               value: "{{ .Values.auth.mountPath }}/{{ .Values.auth.key }}"
+            {{- end }}
             {{- end }}
             {{- with .Values.extraEnv }}
             {{- toYaml . | nindent 12 }}

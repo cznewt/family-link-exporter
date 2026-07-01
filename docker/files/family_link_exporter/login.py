@@ -14,7 +14,9 @@ logger = logging.getLogger(__name__)
 FAMILY_LINK_URL = "https://familylink.google.com"
 
 
-def interactive_login(storage_state_path: str, headless: bool = False) -> None:
+def interactive_login(
+    storage_state_path: str, headless: bool = False, channel: str | None = None
+) -> None:
     try:
         from playwright.sync_api import sync_playwright
     except ImportError as exc:  # pragma: no cover - optional dependency
@@ -24,8 +26,20 @@ def interactive_login(storage_state_path: str, headless: bool = False) -> None:
             "    playwright install chromium"
         ) from exc
 
+    # Google blocks sign-in in obviously-automated browsers ("This browser or app
+    # may not be secure"). Driving a real installed browser (channel="chrome" or
+    # "msedge") and dropping the automation flags gets past it more often; bundled
+    # Chromium is the most likely to be blocked.
+    launch_kwargs = {
+        "headless": headless,
+        "args": ["--disable-blink-features=AutomationControlled"],
+        "ignore_default_args": ["--enable-automation"],
+    }
+    if channel:
+        launch_kwargs["channel"] = channel
+
     with sync_playwright() as pw:
-        browser = pw.chromium.launch(headless=headless)
+        browser = pw.chromium.launch(**launch_kwargs)
         context = browser.new_context()
         page = context.new_page()
         page.goto(FAMILY_LINK_URL)
@@ -33,6 +47,9 @@ def interactive_login(storage_state_path: str, headless: bool = False) -> None:
         print(
             "\nA browser window has opened. Log in to the *parent* Google account,\n"
             "complete any 2FA, and wait until you can see the Family Link dashboard.\n"
+            "If Google says 'this browser may not be secure', close it and retry with\n"
+            "  --channel chrome   (run `playwright install chrome` first), or use the\n"
+            "cookie-export method in the README.\n"
         )
         input("Press Enter here once you are logged in to save the session... ")
 

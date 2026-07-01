@@ -65,12 +65,18 @@ affinity: {}
 # existing Secret (recommended), or inline it here and let the chart create one.
 # With neither set, the pod runs but cannot authenticate (family_link_up == 0).
 auth:
+  # Credential format in the Secret:
+  #   storageState -> a Playwright storage_state.json (from `... login`)
+  #   cookieFile   -> a Netscape cookies.txt exported from a browser you're
+  #                   logged into (use this if Google blocks the Playwright login)
+  mode: storageState
   # Name of an existing Secret holding the session under `key`. Preferred.
   existingSecret: ""
   # Or paste storage_state.json content (chart creates a Secret). Keep out of git!
   # Tip: helm install ... --set-file auth.storageState=./storage_state.json
   storageState: ""
   # Key within the Secret and the filename mounted into the container.
+  # For mode=cookieFile, set this to e.g. cookies.txt.
   key: storage_state.json
   # Directory the session is mounted into (read-only).
   mountPath: /etc/family-link-exporter

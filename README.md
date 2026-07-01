@@ -91,6 +91,23 @@ Set exactly one credential source (see [docs/configuration.md](docs/configuratio
 Sessions expire — when `family_link_up` goes to `0`, refresh the session and
 restart the exporter.
 
+### If Google blocks the Playwright login
+
+Google shows *"This browser or app may not be secure"* for automated Chromium.
+Two ways around it:
+
+1. **Drive your real browser** instead of bundled Chromium:
+   ```bash
+   playwright install chrome
+   python -m family_link_exporter login --channel chrome -o storage_state.json
+   ```
+2. **Export cookies** from a browser you're already logged into (most reliable):
+   open <https://familylink.google.com> as the parent, use a *"Get cookies.txt
+   LOCALLY"* extension to save `cookies.txt`, then use it directly —
+   `FLE_COOKIE_FILE=cookies.txt python -m family_link_exporter dump`. In the
+   chart, set `auth.mode=cookieFile`, `auth.key=cookies.txt` and put the file in
+   the Secret.
+
 ## Repository layout
 
 ```
