@@ -4,18 +4,17 @@
   local this = self,
 
   uid: 'family-link-exporter',
-  dashboardTitle: 'Family Link Exporter',
-  dashboardTags: ['family-link-exporter'],
+  // The dashboard IS the "Android Device" board, placed directly in the
+  // Parental Control folder.
+  dashboardTitle: 'Android Device',
+  dashboardTags: ['family-link-exporter', 'parental-control'],
   datasource: '${datasource}',
 
-  // Grafana folder placement: Parental Control -> Android Device.
-  // parentUid is the uid of the existing "Parental Control" folder in the target
-  // Grafana (instance-specific); override it for a different Grafana.
+  // Grafana folder = the existing "Parental Control" folder (instance-specific
+  // uid in the target Grafana; override for a different Grafana).
   folder: {
-    uid: 'android-device',
-    title: 'Android Device',
-    parentUid: 'afqtbmnsbpb7ka',
-    parentTitle: 'Parental Control',
+    uid: 'afqtbmnsbpb7ka',
+    title: 'Parental Control',
   },
 
   // apps_total carries job+family+child and exists for every child, so it drives

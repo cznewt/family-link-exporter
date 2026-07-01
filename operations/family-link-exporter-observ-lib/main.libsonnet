@@ -104,13 +104,9 @@ local dashboard = import 'custom/dashboard.libsonnet';
     ];
 
     local built = pack.build(cfg, allSignals, groups, alerts);
-    // Place the dashboard in the Parental Control -> Android Device folder.
+    // Place the dashboard directly in the Parental Control folder.
     local dash = built.grafana.dashboard
-                 + dashboard.withFolder(cfg.folder.uid, cfg.folder.title)
-                 + { metadata+: { annotations+: {
-                   'observ-viz.dev/folder-parent-uid': cfg.folder.parentUid,
-                   'observ-viz.dev/folder-parent-title': cfg.folder.parentTitle,
-                 } } };
+                 + dashboard.withFolder(cfg.folder.uid, cfg.folder.title);
 
     built + {
       prometheus+: { rules: rules },

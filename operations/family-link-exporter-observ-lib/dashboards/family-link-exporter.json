@@ -3,10 +3,8 @@
   "kind": "Dashboard",
   "metadata": {
     "annotations": {
-      "grafana.app/folder": "android-device",
-      "observ-viz.dev/folder-parent-title": "Parental Control",
-      "observ-viz.dev/folder-parent-uid": "afqtbmnsbpb7ka",
-      "observ-viz.dev/folder-title": "Android Device"
+      "grafana.app/folder": "afqtbmnsbpb7ka",
+      "observ-viz.dev/folder-title": "Parental Control"
     },
     "name": "family-link-exporter"
   },
@@ -605,14 +603,15 @@
     "liveNow": false,
     "preload": false,
     "tags": [
-      "family-link-exporter"
+      "family-link-exporter",
+      "parental-control"
     ],
     "timeSettings": {
       "autoRefresh": "",
       "from": "now-6h",
       "to": "now"
     },
-    "title": "Family Link Exporter",
+    "title": "Android Device",
     "variables": [
       {
         "kind": "DatasourceVariable",
