@@ -46,4 +46,19 @@ function(cfg)
       's',
       cfg.childSelector,
     ),
+
+    // Hero: seconds since the most recent activity across the child's devices.
+    idleGap: sig(
+      'Idle for',
+      'min by (family, child) (time() - family_link_device_last_activity_timestamp_seconds{%(queriesSelector)s})',
+      's',
+      cfg.childSelector,
+    ),
+    // Hero: the most-recently-active device (carries friendly_name + model labels).
+    activeDevice: sig(
+      'Active device',
+      'topk(1, family_link_device_last_activity_timestamp_seconds{%(queriesSelector)s})',
+      's',
+      cfg.childSelector,
+    ),
   }

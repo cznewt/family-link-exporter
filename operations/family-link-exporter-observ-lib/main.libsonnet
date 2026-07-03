@@ -5,6 +5,7 @@
 //   p.asMonitoringMixin()    // { grafanaDashboards+, prometheusAlerts+ }
 local pack = import 'libs/common-lib/pack.libsonnet';
 local dashboard = import 'custom/dashboard.libsonnet';
+local hero = import 'hero.libsonnet';
 
 {
   new(config={}):
@@ -13,6 +14,12 @@ local dashboard = import 'custom/dashboard.libsonnet';
 
     // Dashboard panel groups. Filter with the $family and $child dropdowns.
     local groups = [
+      {
+        title: 'Today',
+        width: 24,
+        height: 7,
+        elements: { hero: hero(cfg) },
+      },
       {
         title: 'Overview',
         width: 6,
